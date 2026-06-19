@@ -251,7 +251,7 @@ export default function QuizPage() {
           <div className="flex justify-center">
             <button
               onClick={() => {
-                setSession(null);
+                resetQuiz();
                 setSelectedLesson(null);
               }}
               className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all"
