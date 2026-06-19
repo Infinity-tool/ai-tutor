@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 declare global {
   interface Window {
     TalkingHead: any;
+    THREE: any;
   }
 }
 
