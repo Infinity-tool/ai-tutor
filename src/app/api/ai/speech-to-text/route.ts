@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 /**
  * POST /api/ai/speech-to-text
  *
@@ -44,6 +40,11 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Initialize OpenAI client only when needed
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Call OpenAI Whisper API
     // Note: Whisper supports language hints to improve accuracy

@@ -11,7 +11,15 @@ import { MathSolution, GraphData } from "../types/math.types";
 import Groq from "groq-sdk";
 import { Lesson } from "@/shared/types/curriculum.types";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Lazy initialization for Groq client
+let groqClient: Groq | null = null;
+
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groqClient;
+}
 
 function getMathSystemPrompt(lesson?: Lesson) {
   const basePrompt = `You are an expert math tutor. When given a math problem:
@@ -104,6 +112,7 @@ export async function solveProblem(problem: string, lesson?: Lesson): Promise<Ma
 
   const mathSystemPrompt = getMathSystemPrompt(lesson);
 
+  const groq = getGroqClient();
   const completion = await groq.chat.completions.create({
     model: "llama-3.1-70b-versatile",
     messages: [

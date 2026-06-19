@@ -10,7 +10,15 @@ import { buildTutorPrompt } from "./prompts/base.prompt";
 import { Subject, CEFRLevel } from "@/shared/types/global.types";
 import { Lesson } from "@/shared/types/curriculum.types";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Lazy initialization for Groq client to avoid build-time issues
+let groqClient: Groq | null = null;
+
+function getGroqClient(): Groq {
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groqClient;
+}
 
 export interface LLMMessage {
   role: "user" | "assistant" | "system";
@@ -44,6 +52,7 @@ export async function streamChat(
 
   try {
     // ── Primary: Groq ──────────────────────────────────────────
+    const groq = getGroqClient();
     const groqStream = await groq.chat.completions.create({
       model: "llama-3.1-70b-versatile",
       messages: allMessages,

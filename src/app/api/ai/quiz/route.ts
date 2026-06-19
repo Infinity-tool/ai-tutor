@@ -5,8 +5,6 @@ import { SUBJECTS, CEFR_LEVELS } from "@/shared/types/global.types";
 import { generateId } from "@/shared/lib/utils";
 import Groq from "groq-sdk";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.GROQ_API_KEY) {
@@ -22,6 +20,7 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = buildQuizPrompt(subject, level, topic);
 
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const completion = await groq.chat.completions.create({
       model: "llama-3.1-70b-versatile",
       messages: [
