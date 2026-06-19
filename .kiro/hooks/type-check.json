@@ -1,0 +1,14 @@
+{
+  "name": "TypeScript Type Check",
+  "version": "1.0.0",
+  "description": "Run tsc type check when TypeScript files are saved",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/**/*.ts", "src/**/*.tsx"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npx tsc --noEmit --pretty 2>&1 | head -50",
+    "timeout": 30
+  }
+}

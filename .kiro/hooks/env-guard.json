@@ -1,0 +1,13 @@
+{
+  "name": "Env Guard",
+  "version": "1.0.0",
+  "description": "Prevent API keys from leaking into client-reachable code",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/app/api/**/*.ts"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "An API route file was just saved. Scan it and verify: (1) No env variable starts with NEXT_PUBLIC_, (2) All process.env references are to server-side secrets only, (3) No API key string literals are hardcoded. If any violation is found, fix it immediately and explain what was wrong."
+  }
+}

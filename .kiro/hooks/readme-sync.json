@@ -1,0 +1,13 @@
+{
+  "name": "README Sync",
+  "version": "1.0.0",
+  "description": "When a component file is saved, remind the agent to update the feature README",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/features/*/components/**/*.tsx"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A component file in a feature folder was just saved. Check the parent feature's README.md and update the 'Main Components' section if the component is new or its description has changed. Only edit the README — do not touch any other files."
+  }
+}
