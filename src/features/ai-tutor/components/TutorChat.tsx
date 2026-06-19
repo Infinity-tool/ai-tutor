@@ -9,11 +9,11 @@ import { useTextToSpeech } from "@/features/voice/hooks/useTextToSpeech";
 import { MessageBubble } from "./MessageBubble";
 import { SubjectSelector } from "./SubjectSelector";
 import { LevelBadge } from "./LevelBadge";
-import { VoiceRecorder } from "@/features/voice/components/VoiceRecorder";
+
 import { Subject, CEFRLevel, SUBJECT_LABELS } from "@/shared/types/global.types";
 import { Lesson } from "@/shared/types/curriculum.types";
 import { formatDuration } from "@/shared/lib/utils";
-import { Send, StopCircle, Clock, BookOpen, Award } from "lucide-react";
+import { Send, StopCircle, Clock, BookOpen, Award, Mic } from "lucide-react";
 
 // Dynamic import — AvatarStream, no SSR
 const AvatarStream = dynamic(
@@ -59,7 +59,7 @@ export function TutorChat({
     onComplete: (text) => setLastAiText(text),
   });
 
-  const { transcribe, isTranscribing } = useSpeechToText({
+  const { transcript, isTranscribing, startListening, stopListening, reset: resetTranscript } = useSpeechToText({
     language: subject === "math" ? "en" : subject,
   });
   const { speak, isSpeaking, stop: stopSpeaking } = useTextToSpeech();
@@ -78,6 +78,14 @@ export function TutorChat({
     }
   }, [lesson, sendMessage, messages.length]);
 
+  // Auto-send transcript when available
+  useEffect(() => {
+    if (transcript) {
+      sendMessage(transcript);
+      resetTranscript();
+    }
+  }, [transcript, sendMessage, resetTranscript]);
+
   const handleSend = async () => {
     const trimmed = textInput.trim();
     if (!trimmed || isStreaming) return;
@@ -85,9 +93,12 @@ export function TutorChat({
     await sendMessage(trimmed);
   };
 
-  const handleRecordingComplete = async (blob: Blob) => {
-    const transcript = await transcribe(blob);
-    if (transcript) await sendMessage(transcript);
+  const toggleListening = () => {
+    if (isTranscribing) {
+      stopListening();
+    } else {
+      startListening();
+    }
   };
 
   const handleEndSession = async () => {
@@ -235,10 +246,17 @@ export function TutorChat({
         {/* Input Area */}
         <div className="p-5 border-t border-white/10 bg-gradient-to-t from-black/20 to-transparent">
           <div className="flex items-center gap-3">
-            <VoiceRecorder
-              onRecordingComplete={handleRecordingComplete}
+            <button
+              onClick={toggleListening}
               disabled={isDisabled}
-            />
+              className={`p-4 rounded-2xl transition-all shadow-lg ${
+                isTranscribing
+                  ? "bg-gradient-to-r from-red-500 to-orange-600 text-white hover:from-red-600 hover:to-orange-700 animate-pulse shadow-red-500/25"
+                  : "bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-blue-500/25"
+              }`}
+            >
+              <Mic size={20} />
+            </button>
 
             <div className="flex-1 relative">
               <input

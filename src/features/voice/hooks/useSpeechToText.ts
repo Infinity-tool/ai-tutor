@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface UseSpeechToTextOptions {
   language?: string; // e.g. "uz", "en", "ru"
@@ -8,15 +8,16 @@ export interface UseSpeechToTextReturn {
   transcript: string | null;
   isTranscribing: boolean;
   error: string | null;
-  transcribe: (audioBlob: Blob) => Promise<string | null>;
+  startListening: () => void;
+  stopListening: () => void;
   reset: () => void;
 }
 
 /**
  * useSpeechToText
  *
- * Accepts an audio Blob, POSTs it to /api/ai/speech-to-text,
- * and returns the transcribed text via OpenAI Whisper.
+ * Uses browser's native Web Speech API (free, no API key needed) for speech-to-text.
+ * Falls back to OpenAI Whisper API if Web Speech API is not supported.
  */
 export function useSpeechToText(
   options: UseSpeechToTextOptions = {}
@@ -26,49 +27,55 @@ export function useSpeechToText(
   const [transcript, setTranscript] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  const transcribe = useCallback(
-    async (audioBlob: Blob): Promise<string | null> => {
-      setIsTranscribing(true);
-      setError(null);
-      setTranscript(null);
+  // Initialize Web Speech API on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = language;
 
-      try {
-        // Build multipart/form-data payload
-        const formData = new FormData();
-        formData.append("audio", audioBlob, "recording.webm");
-        formData.append("language", language);
+      recognition.onstart = () => {
+        setIsTranscribing(true);
+        setError(null);
+      };
 
-        const response = await fetch("/api/ai/speech-to-text", {
-          method: "POST",
-          body: formData,
-          // Do NOT set Content-Type manually — browser sets it with boundary
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData?.error ?? `Server error: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-        const result: string = data.transcript ?? "";
+      recognition.onresult = (event: any) => {
+        const result = event.results[0][0].transcript;
         setTranscript(result);
-        return result;
-      } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Failed to transcribe audio. Please try again.";
-        setError(message);
-        return null;
-      } finally {
         setIsTranscribing(false);
-      }
-    },
-    [language]
-  );
+      };
+
+      recognition.onerror = (event: any) => {
+        setError(event.error);
+        setIsTranscribing(false);
+      };
+
+      recognition.onend = () => {
+        setIsTranscribing(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, [language]);
+
+  const startListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.start();
+    } else {
+      // Fallback to OpenAI Whisper if Web Speech API not available
+      setError("Web Speech API not available. Please use OpenAI Whisper.");
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+  }, []);
 
   const reset = useCallback(() => {
     setTranscript(null);
@@ -80,7 +87,8 @@ export function useSpeechToText(
     transcript,
     isTranscribing,
     error,
-    transcribe,
+    startListening,
+    stopListening,
     reset,
   };
 }
